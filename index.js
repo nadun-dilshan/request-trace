@@ -5,7 +5,6 @@ const mongoose = require('mongoose');
 const ipInfo = require('ipinfo');
 const UAParser = require('ua-parser-js');
 const app = express();
-const port = process.env.PORT || 3000;
 const IPINFO_TOKEN = process.env.IPINFO_TOKEN;
 
 // Middleware to parse JSON and URL-encoded data
@@ -14,8 +13,8 @@ app.use(express.urlencoded({ extended: true }));
 
 // MongoDB connection
 mongoose.connect(process.env.MONGODB_URI)
-.then(() => console.log('Connected to MongoDB'))
-.catch(err => console.error('MongoDB connection error:', err));
+  .then(() => console.log('Connected to MongoDB'))
+  .catch(err => console.error('MongoDB connection error:', err));
 
 // Enhanced schema for request logs with comprehensive user details
 const requestLogSchema = new mongoose.Schema({
@@ -31,7 +30,7 @@ const requestLogSchema = new mongoose.Schema({
   body: Object,
   responseStatus: Number,
   responseTime: Number,
-  
+
   // Enhanced Geolocation Data
   location: {
     country: { type: String },
@@ -46,7 +45,7 @@ const requestLogSchema = new mongoose.Schema({
     continent: { type: String },
     accuracyRadius: { type: Number }
   },
-  
+
   // Network & Security Info
   network: {
     asn: { type: String },
@@ -59,7 +58,7 @@ const requestLogSchema = new mongoose.Schema({
     isHosting: { type: Boolean },
     isRelay: { type: Boolean }
   },
-  
+
   // Enhanced Device Info
   device: {
     type: { type: String }, // mobile, tablet, desktop, wearable, tv, etc.
@@ -72,7 +71,7 @@ const requestLogSchema = new mongoose.Schema({
     isDesktop: { type: Boolean },
     isTouchCapable: { type: Boolean }
   },
-  
+
   // Operating System Details
   os: {
     name: { type: String },
@@ -80,7 +79,7 @@ const requestLogSchema = new mongoose.Schema({
     platform: { type: String },
     fullVersion: { type: String }
   },
-  
+
   // Browser Details
   browser: {
     name: { type: String },
@@ -94,7 +93,7 @@ const requestLogSchema = new mongoose.Schema({
     language: { type: String },
     languages: [{ type: String }]
   },
-  
+
   // Screen & Display Info (from headers/client hints)
   display: {
     screenResolution: { type: String },
@@ -102,7 +101,7 @@ const requestLogSchema = new mongoose.Schema({
     colorDepth: { type: Number },
     pixelRatio: { type: Number }
   },
-  
+
   // Connection Info
   connection: {
     protocol: { type: String }, // http/https
@@ -114,14 +113,14 @@ const requestLogSchema = new mongoose.Schema({
     acceptEncoding: { type: String },
     cacheControl: { type: String }
   },
-  
+
   // Session & Tracking
   session: {
     cookies: { type: Object },
     sessionId: { type: String },
     fingerprint: { type: String } // Generated hash for tracking
   },
-  
+
   // Request Metadata
   metadata: {
     isAjax: { type: Boolean },
@@ -132,9 +131,9 @@ const requestLogSchema = new mongoose.Schema({
     host: { type: String },
     port: { type: Number }
   },
-  
+
   timestamp: { type: Date, default: Date.now },
-  
+
   // Additional computed fields
   requestDay: String, // Monday, Tuesday, etc.
   requestHour: Number,
@@ -159,7 +158,7 @@ function generateFingerprint(req, ipData, deviceInfo) {
     deviceInfo.vendor || '',
     req.get('Accept-Language') || ''
   ].join('|');
-  
+
   return crypto.createHash('md5').update(fingerprintData).digest('hex');
 }
 
@@ -174,10 +173,10 @@ function extractRealIp(req) {
   const forwardedFor = req.get('X-Forwarded-For');
   const realIp = req.get('X-Real-IP');
   const cfConnectingIp = req.get('CF-Connecting-IP'); // Cloudflare
-  
+
   let ip = req.ip || req.connection.remoteAddress;
   let forwardedIps = [];
-  
+
   if (cfConnectingIp) {
     ip = cfConnectingIp;
   } else if (realIp) {
@@ -186,10 +185,10 @@ function extractRealIp(req) {
     forwardedIps = forwardedFor.split(',').map(ip => ip.trim());
     ip = forwardedIps[0]; // First IP is usually the real client
   }
-  
+
   // Clean IPv6 prefix if present
   ip = ip.replace(/^::ffff:/, '');
-  
+
   return { ip, forwardedIps };
 }
 
@@ -201,7 +200,7 @@ app.use(async (req, res, next) => {
     const responseTime = Date.now() - start;
     const { ip, forwardedIps } = extractRealIp(req);
     const userAgent = req.get('User-Agent') || 'Unknown';
-    
+
     // Initialize log data
     const logData = {
       method: req.method,
@@ -247,11 +246,11 @@ app.use(async (req, res, next) => {
     };
 
     // Browser details
-    const isChromium = browserInfo.name && 
-      (browserInfo.name.includes('Chrome') || 
-       browserInfo.name.includes('Edge') || 
-       browserInfo.name.includes('Opera'));
-    
+    const isChromium = browserInfo.name &&
+      (browserInfo.name.includes('Chrome') ||
+        browserInfo.name.includes('Edge') ||
+        browserInfo.name.includes('Opera'));
+
     logData.browser = {
       name: browserInfo.name || 'Unknown',
       version: browserInfo.version || 'Unknown',
@@ -279,7 +278,7 @@ app.use(async (req, res, next) => {
 
     // Display info from client hints if available
     logData.display = {
-      screenResolution: req.get('Sec-CH-Viewport-Width') && req.get('Sec-CH-Viewport-Height') 
+      screenResolution: req.get('Sec-CH-Viewport-Width') && req.get('Sec-CH-Viewport-Height')
         ? `${req.get('Sec-CH-Viewport-Width')}x${req.get('Sec-CH-Viewport-Height')}`
         : 'Unknown',
       viewportSize: req.get('Sec-CH-Viewport-Width') || 'Unknown',
@@ -302,7 +301,7 @@ app.use(async (req, res, next) => {
     let ipData = null;
     try {
       ipData = await ipInfo(ip, IPINFO_TOKEN);
-      
+
       // Enhanced location data
       logData.location = {
         country: ipData.country || 'Unknown',
@@ -416,16 +415,16 @@ app.post('/api/data', (req, res) => {
 app.get('/api/private/logs', async (req, res) => {
   try {
     const { limit = 100, country, isVPN, device, sortBy = 'timestamp' } = req.query;
-    
+
     const filter = {};
     if (country) filter['location.country'] = country;
     if (isVPN !== undefined) filter['network.isVPN'] = isVPN === 'true';
     if (device) filter['device.type'] = device;
-    
+
     const logs = await RequestLog.find(filter)
       .sort({ [sortBy]: -1 })
       .limit(parseInt(limit));
-    
+
     res.status(200).json(logs);
   } catch (err) {
     console.error('Error retrieving logs:', err.message);
@@ -438,7 +437,7 @@ app.get('/api/private/analytics/ip/:ip', async (req, res) => {
   try {
     const { ip } = req.params;
     const logs = await RequestLog.find({ ip }).sort({ timestamp: -1 });
-    
+
     const analytics = {
       totalRequests: logs.length,
       firstSeen: logs[logs.length - 1]?.timestamp,
@@ -449,7 +448,7 @@ app.get('/api/private/analytics/ip/:ip', async (req, res) => {
       isVPN: logs[0]?.network.isVPN,
       endpoints: logs.map(l => ({ method: l.method, url: l.url, status: l.responseStatus }))
     };
-    
+
     res.status(200).json(analytics);
   } catch (err) {
     console.error('Error generating analytics:', err.message);
@@ -461,7 +460,7 @@ app.get('/api/private/analytics/ip/:ip', async (req, res) => {
 app.get('/api/private/analytics/dashboard', async (req, res) => {
   try {
     const logs = await RequestLog.find().sort({ timestamp: -1 }).limit(1000);
-    
+
     const analytics = {
       totalRequests: logs.length,
       uniqueIPs: new Set(logs.map(l => l.ip)).size,
@@ -475,7 +474,7 @@ app.get('/api/private/analytics/dashboard', async (req, res) => {
       requestsByHour: getRequestsByHour(logs),
       requestsByDay: getRequestsByDay(logs)
     };
-    
+
     res.status(200).json(analytics);
   } catch (err) {
     console.error('Error generating dashboard:', err.message);
@@ -509,13 +508,17 @@ function getRequestsByDay(logs) {
   return Object.entries(dayCounts).map(([day, count]) => ({ day, count }));
 }
 
-// Start server
-app.listen(port, () => {
-  console.log(`Enhanced RequestTrace running at http://localhost:${port}`);
-  console.log(`Available endpoints:`);
-  console.log(`  - GET  /api/hello`);
-  console.log(`  - POST /api/data`);
-  console.log(`  - GET  /api/logs`);
-  console.log(`  - GET  /api/analytics/ip/:ip`);
-  console.log(`  - GET  /api/analytics/dashboard`);
-});
+if (process.env.NODE_ENV === 'development') {
+  const PORT = process.env.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`Enhanced RequestTrace running at http://localhost:${PORT}`);
+    console.log(`Available endpoints:`);
+    console.log(`  - GET  /api/hello`);
+    console.log(`  - POST /api/data`);
+    console.log(`  - GET  /api/logs`);
+    console.log(`  - GET  /api/analytics/ip/:ip`);
+    console.log(`  - GET  /api/analytics/dashboard`);
+  });
+}
+
+module.exports = app;
