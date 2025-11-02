@@ -1,0 +1,25 @@
+{
+  "name": "request-trace",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git@github.com-personal:nadun-dilshan/request-trace.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "ipinfo": "^1.5.2",
+    "mongoose": "^8.19.2",
+    "node-fetch": "^3.3.2",
+    "ua-parser-js": "^2.0.6"
+  }
+}
